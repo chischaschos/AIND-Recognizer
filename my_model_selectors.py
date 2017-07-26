@@ -76,8 +76,27 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        best_num_components = self.n_constant
-        return self.base_model(best_num_components)
+        models = []
+
+        for n_components in range(self.min_n_components, self.max_n_components):
+            model = self.base_model(n_components)
+            if model is None:
+                continue
+
+            try:
+                models.append((self.score(model), model))
+            except:
+                continue
+
+        if models:
+            return min(models)[1]
+        else:
+            return None
+
+    def score(self, model):
+        p = model.n_components * (model.n_components - 1) + float(2 * model.n_features * model.n_components)
+        score = -2 * model.score(self.X, self.lengths) + p * float(math.log(len(self.X)))
+        return score
 
 
 class SelectorDIC(ModelSelector):
@@ -92,9 +111,27 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        best_num_components = self.n_constant
-        return self.base_model(best_num_components)
+        models = []
 
+        for n_components in range(self.min_n_components, self.max_n_components):
+            model = self.base_model(n_components)
+            if model is None:
+                continue
+
+            try:
+                models.append((self.score(model), model))
+            except:
+                continue
+
+        if models:
+            return min(models)[1]
+        else:
+            return None
+
+    def score(self, model):
+        p = model.n_components * (model.n_components - 1) + 2 * model.n_features * model.n_components
+        score = -2 * model.score(self.X, self.lengths) + float(p * math.log(len(self.X)))
+        return score
 
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
@@ -118,7 +155,10 @@ class SelectorCV(ModelSelector):
                     if model is None:
                         continue
 
-                    logls.append(model.score(self.X, self.lengths))
+                    try:
+                        logls.append(model.score(self.X, self.lengths))
+                    except:
+                        continue
 
             if not logls:
                 continue
