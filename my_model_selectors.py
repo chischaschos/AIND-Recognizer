@@ -145,7 +145,8 @@ class SelectorCV(ModelSelector):
 
         for n_components in range(self.min_n_components, self.max_n_components):
             logls = []
-            split_method = KFold()
+            splits_num = 3 if len(self.sequences) > 2 else 2
+            split_method = KFold(n_splits=splits_num)
 
             if len(self.sequences) >= split_method.n_splits:
                 for cv_train_idx, _ in split_method.split(self.sequences):
