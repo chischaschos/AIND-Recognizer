@@ -76,8 +76,8 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        best_num_components = self.n_constant
+        return self.base_model(best_num_components)
 
 
 class SelectorDIC(ModelSelector):
@@ -92,8 +92,8 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        best_num_components = self.n_constant
+        return self.base_model(best_num_components)
 
 
 class SelectorCV(ModelSelector):
@@ -104,5 +104,27 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        models = []
+
+        for n_components in range(self.min_n_components, self.max_n_components):
+            logls = []
+            split_method = KFold()
+
+            if len(self.sequences) >= split_method.n_splits:
+                for cv_train_idx, _ in split_method.split(self.sequences):
+                    self.X, self.lengths = combine_sequences(cv_train_idx, self.sequences)
+
+                    model = self.base_model(n_components)
+                    if model is None:
+                        continue
+
+                    logls.append(model.score(self.X, self.lengths))
+
+            if not logls:
+                continue
+            models.append((np.mean(logls), model))
+
+        if models:
+            return max(models)[1]
+        else:
+            return None
