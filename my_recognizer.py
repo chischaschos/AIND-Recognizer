@@ -20,6 +20,12 @@ def recognize(models: dict, test_set: SinglesData):
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     probabilities = []
     guesses = []
-    # TODO implement the recognizer
-    # return probabilities, guesses
-    raise NotImplementedError
+
+    for word in test_set.wordlist:
+        guesses.append(word)
+        if word in models and models[word] is not None:
+            probabilities.append({word: models[word].score})
+        else:
+            probabilities.append({word: 0})
+
+    return (probabilities, guesses)
